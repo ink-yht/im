@@ -1,0 +1,7 @@
+MySQL:
+  dsn: "root:root@tcp(localhost:13326)/im?charset=utf8mb4&parseTime=True&loc=Local"
+Redis:
+  Addr: "127.0.0.1:16379"
+uploads:
+  size: 2
+  path: uploads/
