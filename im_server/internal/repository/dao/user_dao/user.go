@@ -8,10 +8,14 @@ import (
 	"time"
 )
 
-var ErrDuplicate = errors.New("邮箱冲突")
+var (
+	ErrDuplicate      = errors.New("邮箱冲突")
+	ErrRecordNotFound = gorm.ErrRecordNotFound
+)
 
 type UserDao interface {
 	Insert(ctx context.Context, u User) error
+	FindByEmail(ctx context.Context, email string) (User, error)
 }
 
 type GormUserDAO struct {
@@ -22,6 +26,14 @@ func NewUserDAO(db *gorm.DB) UserDao {
 	return &GormUserDAO{db: db}
 }
 
+// FindByEmail 查询邮箱
+func (dao *GormUserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
+	var user User
+	err := dao.db.WithContext(ctx).Where("email = ? ", email).First(&user).Error
+	return user, err
+}
+
+// Insert 注册
 func (dao *GormUserDAO) Insert(ctx context.Context, u User) error {
 	// 写入数据库
 

@@ -32,14 +32,14 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 }
 
 func (u *UserHandler) SignUp(ctx *gin.Context) {
-	var req user_domain.UserRegisterRequest
+	var req user_domain.EmailRegisterRequest
 	err := ctx.Bind(&req)
 	if err != nil {
 		// 出错会返回 400 错误
 		return
 	}
 
-	err = u.svc.Signup(ctx, user_domain.UserRegisterRequest(req))
+	err = u.svc.Signup(ctx, req)
 
 	if errors.Is(err, user_domain.ErrTheMailboxIsNotInTheRightFormat) {
 		ctx.JSON(http.StatusOK, web.Result{
@@ -92,7 +92,38 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 }
 
 func (u *UserHandler) Login(ctx *gin.Context) {
+	var req user_domain.EmailLoginRequest
+	err := ctx.Bind(&req)
+	if err != nil {
+		return
+	}
 
+	// 提前提取 User-Agent 头
+	userAgent := ctx.GetHeader("User-Agent")
+
+	token, err := u.svc.Login(ctx, &req, userAgent)
+	if errors.Is(err, user_service.ErrRecordNotFound) {
+		ctx.JSON(http.StatusOK, web.Result{
+			Code: 1,
+			Msg:  "邮箱或密码不存在",
+			Data: nil,
+		})
+		return
+	}
+	if err != nil {
+		ctx.JSON(http.StatusOK, web.Result{
+			Code: 2,
+			Msg:  "系统错误",
+			Data: nil,
+		})
+		return
+	}
+	ctx.Header("x-jwt-token", token)
+	ctx.JSON(http.StatusOK, web.Result{
+		Code: 0,
+		Msg:  "登录成功",
+		Data: nil,
+	})
 }
 
 func (u *UserHandler) Edit(ctx *gin.Context) {

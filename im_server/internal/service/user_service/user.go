@@ -2,16 +2,22 @@ package user_service
 
 import (
 	"context"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/ink-yht/im/internal/domain/user_domain"
 	"github.com/ink-yht/im/internal/repository/user_repo"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
-var ErrDuplicate = user_repo.ErrDuplicate
+var (
+	ErrDuplicate      = user_repo.ErrDuplicate
+	ErrRecordNotFound = user_repo.ErrRecordNotFound
+)
 
 // UserService 定义了用户服务的接口
 type UserService interface {
-	Signup(ctx context.Context, req user_domain.UserRegisterRequest) error
+	Signup(ctx context.Context, req user_domain.EmailRegisterRequest) error
+	Login(ctx context.Context, req *user_domain.EmailLoginRequest, userAgent string) (string, error)
 }
 
 // UserServiceImpl 实现了 UserService 接口
@@ -25,7 +31,28 @@ func NewUserService(repo user_repo.UserRepository) UserService {
 	}
 }
 
-func (svc *UserServiceImpl) Signup(ctx context.Context, req user_domain.UserRegisterRequest) error {
+func (svc *UserServiceImpl) Login(ctx context.Context, req *user_domain.EmailLoginRequest, userAgent string) (string, error) {
+	// 从数据库中查找用户
+	user, err := svc.repo.FindByEmail(ctx, req.Email)
+	if err != nil {
+		return "", err
+	}
+
+	// 校验密码
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if err != nil {
+		return "", err
+	}
+
+	// 生成 JWT
+	token, err := svc.setJWTToken(ctx, user.ID, userAgent)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func (svc *UserServiceImpl) Signup(ctx context.Context, req user_domain.EmailRegisterRequest) error {
 	// 校验请求
 	if err := req.Validate(); err != nil {
 		return err
@@ -67,4 +94,21 @@ func (svc *UserServiceImpl) Signup(ctx context.Context, req user_domain.UserRegi
 	}
 
 	return nil
+}
+
+// setJWTToken 生成 token
+func (svc *UserServiceImpl) setJWTToken(ctx context.Context, uid int64, userAgent string) (string, error) {
+	tokenStr := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
+		Id:        uid,
+		UserAgent: userAgent,
+		RegisteredClaims: jwt.RegisteredClaims{
+			// 过期时间设置
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 3)),
+		},
+	})
+	token, err := tokenStr.SignedString(JWTKey)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

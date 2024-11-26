@@ -13,15 +13,15 @@ var (
 	ErrThePasswordIsInconsistentTwice   = errors.New("两次密码不一致")
 )
 
-// UserRegisterRequest 用户注册请求体
-type UserRegisterRequest struct {
+// EmailRegisterRequest 用户邮箱注册请求体
+type EmailRegisterRequest struct {
 	Email           string `json:"email"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirmPassword"`
 }
 
 // Validate 校验请求参数
-func (req *UserRegisterRequest) Validate() error {
+func (req *EmailRegisterRequest) Validate() error {
 	// 校验邮箱格式
 	if match, _ := emailRegex.MatchString(req.Email); !match {
 		return ErrTheMailboxIsNotInTheRightFormat
