@@ -37,7 +37,7 @@ type UserConf struct {
 	Sound                bool                  // 声音
 	SecureLink           bool                  // 安全链接
 	SavePwd              bool                  // 保存密码
-	SearchUser           int8                  `gorm:"default:2"` // 别人查找到你的方式 0 不允许别人查找到我， 1  通过用户号找到我 2 可以通过手机号搜索到我
+	SearchUser           int8                  `gorm:"default:1"` // 别人查找到你的方式 0 不允许别人查找到我， 1  通过用户号找到我 2 可以通过手机号搜索到我
 	Verification         int8                  `gorm:"default:1"` // 好友验证 0 不允许任何人添加  1 允许任何人添加  2 需要验证消息 3 需要回答问题  4  需要正确回答问题
 	VerificationQuestion *VerificationQuestion // 验证问题  为3和4的时候需要
 	Online               bool                  // 是否在线

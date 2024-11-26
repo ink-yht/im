@@ -1,20 +1,29 @@
 package user_domain
 
+import (
+	"time"
+)
+
+// User 领域对象
 type User struct {
-	Email     string   `json:"email"`
-	Phone     string   `json:"phone"`
-	Password  string   `json:"password"`
-	Nickname  string   `json:"nickname"`
-	Signature string   `json:"signature"`
-	Avatar    string   `json:"avatar"`
-	Address   string   `json:"address"`
-	Birthday  int64    `json:"birthday"`
-	Sex       int8     `json:"sex"`
-	UserConf  UserConf `json:"userConf"`
+	ID         int64     `json:"id"`
+	CreateTime time.Time `json:"createTime"`
+	Email      string    `json:"email"`
+	Phone      string    `json:"phone"`
+	Password   string    `json:"password"`
+	Nickname   string    `json:"nickname"`
+	Signature  string    `json:"signature"`
+	Avatar     string    `json:"avatar"`
+	Address    string    `json:"address"`
+	Birthday   int64     `json:"birthday"`
+	Sex        int8      `json:"sex"`
+	UserConf   UserConf  `json:"userConf"`
 }
 
 type UserConf struct {
-	RecallMessage        string                `json:"recallMessage"`
+	ID                   int64                 `json:"id"`
+	CreateTime           time.Time             `json:"createTime"`
+	RecallMessage        *string               `json:"recallMessage"`
 	FriendOnline         bool                  `json:"friendOnline"`
 	Sound                bool                  `json:"sound"`
 	SecureLink           bool                  `json:"secureLink"`
