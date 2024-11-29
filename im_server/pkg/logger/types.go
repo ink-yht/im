@@ -10,6 +10,7 @@ type Logger interface {
 type Field struct {
 	Key   string
 	Value any
+	err   error
 }
 
 func LoggerExample() {

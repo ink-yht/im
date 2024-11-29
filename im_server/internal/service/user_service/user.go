@@ -18,6 +18,7 @@ var (
 type UserService interface {
 	Signup(ctx context.Context, req user_domain.EmailRegisterRequest) error
 	Login(ctx context.Context, req *user_domain.EmailLoginRequest, userAgent string) (string, error)
+	Info(ctx context.Context, id int64) (user_domain.User, error)
 }
 
 // UserServiceImpl 实现了 UserService 接口
@@ -29,6 +30,10 @@ func NewUserService(repo user_repo.UserRepository) UserService {
 	return &UserServiceImpl{
 		repo: repo,
 	}
+}
+
+func (svc *UserServiceImpl) Info(ctx context.Context, id int64) (user_domain.User, error) {
+	return svc.repo.FindByID(ctx, id)
 }
 
 func (svc *UserServiceImpl) Login(ctx context.Context, req *user_domain.EmailLoginRequest, userAgent string) (string, error) {

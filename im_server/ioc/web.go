@@ -32,7 +32,7 @@ func InitMiddleWares(l logger.Logger) []gin.HandlerFunc {
 		//	l.Debug("HTTP请求", logger.Field{Key: "al", Value: al})
 		//}).AllowReqBody().AllowRespBody().Build(),
 
-		middlewares.NewLoginJWTMiddlewareBuilder().IgnorePaths("/users").IgnorePaths("/login").Build(),
+		middlewares.NewLoginJWTMiddlewareBuilder().IgnorePaths("/users/signup").IgnorePaths("/users/login").Build(),
 
 		//ratelimit.NewBuilder(redisClient, time.Minute, 100).Build(),
 	}

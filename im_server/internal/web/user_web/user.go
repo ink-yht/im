@@ -6,6 +6,7 @@ import (
 	"github.com/ink-yht/im/internal/domain/user_domain"
 	"github.com/ink-yht/im/internal/service/user_service"
 	"github.com/ink-yht/im/internal/web"
+	"github.com/ink-yht/im/pkg/logger"
 	"net/http"
 )
 
@@ -14,21 +15,24 @@ import (
 
 type UserHandler struct {
 	svc user_service.UserService
+	l   logger.Logger
 }
 
-func NewUserHandler(svc user_service.UserService) *UserHandler {
+func NewUserHandler(svc user_service.UserService, l logger.Logger) *UserHandler {
 	return &UserHandler{
 		svc: svc,
+		l:   l,
 	}
 }
 
 // RegisterRoutes 路由注册
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
-	server.POST("/users", u.SignUp)       // 用户注册
-	server.POST("/login", u.Login)        // 用户登录
-	server.PUT("/users/:id", u.Edit)      // 用户修改个人信息
-	server.GET("/users/:id", u.Info)      // 用户信息获取
-	server.DELETE("/users/:id", u.Logout) // 用户注销
+	ug := server.Group("/users")
+	ug.POST("/signup", u.SignUp) // 用户注册
+	ug.POST("/login", u.Login)   // 用户登录
+	ug.POST("/edit", u.Edit)     // 用户修改个人信息
+	ug.GET("/info", u.Info)      // 用户信息获取
+	ug.GET("/logout", u.Logout)  // 用户注销
 }
 
 func (u *UserHandler) SignUp(ctx *gin.Context) {
@@ -47,6 +51,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 			Msg:  "电子邮件格式无效",
 			Data: nil,
 		})
+		u.l.Warn("电子邮件格式无效", logger.String("email", req.Email))
 		return
 	}
 	if errors.Is(err, user_domain.ErrThePasswordIsNotInTheRightFormat) {
@@ -55,6 +60,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 			Msg:  "密码长度必须为 8-20 个字符，并包含字母、数字和特殊字符",
 			Data: nil,
 		})
+		u.l.Warn("密码格式不对", logger.String("email", req.Email))
 		return
 	}
 	if errors.Is(err, user_domain.ErrThePasswordIsInconsistentTwice) {
@@ -63,6 +69,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 			Msg:  "两次密码不一致",
 			Data: nil,
 		})
+		u.l.Warn("两次密码不一致", logger.String("email", req.Email))
 		return
 	}
 	if errors.Is(err, user_service.ErrDuplicate) {
@@ -72,6 +79,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 			Msg:  "邮箱冲突",
 			Data: nil,
 		})
+		u.l.Warn("邮箱冲突", logger.String("email", req.Email))
 		return
 	}
 	if err != nil {
@@ -80,6 +88,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 			Msg:  "系统错误",
 			Data: nil,
 		})
+		u.l.Error("系统错误", logger.Error("err", err))
 		return
 	}
 
@@ -88,7 +97,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		Msg:  "注册成功",
 		Data: nil,
 	})
-
+	u.l.Info("登录成功", logger.String("email", req.Email))
 }
 
 func (u *UserHandler) Login(ctx *gin.Context) {
@@ -108,6 +117,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 			Msg:  "邮箱或密码不存在",
 			Data: nil,
 		})
+		u.l.Warn("邮箱或密码不存在", logger.String("email", req.Email))
 		return
 	}
 	if err != nil {
@@ -116,6 +126,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 			Msg:  "系统错误",
 			Data: nil,
 		})
+		u.l.Error("邮箱或密码不存在", logger.Error("err", err))
 		return
 	}
 	ctx.Header("x-jwt-token", token)
@@ -124,6 +135,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		Msg:  "登录成功",
 		Data: nil,
 	})
+	u.l.Info("登录成功", logger.String("email", req.Email))
 }
 
 func (u *UserHandler) Edit(ctx *gin.Context) {
@@ -132,6 +144,23 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 
 func (u *UserHandler) Info(ctx *gin.Context) {
 
+	userClaims := ctx.MustGet("claims").(*user_service.UserClaims)
+
+	user, err := u.svc.Info(ctx, userClaims.Id)
+	if err != nil {
+		ctx.JSON(http.StatusOK, web.Result{
+			Code: 2,
+			Msg:  "系统错误",
+			Data: nil,
+		})
+
+		return
+	}
+	ctx.JSON(http.StatusOK, web.Result{
+		Code: 0,
+		Msg:  "个人信息获取成功",
+		Data: user,
+	})
 }
 
 func (u *UserHandler) Logout(ctx *gin.Context) {

@@ -16,6 +16,7 @@ var (
 type UserRepository interface {
 	Create(ctx context.Context, user user_domain.User) error
 	FindByEmail(ctx context.Context, email string) (user user_domain.User, err error)
+	FindByID(ctx context.Context, id int64) (user_domain.User, error)
 }
 
 type UserRepositoryImpl struct {
@@ -26,6 +27,14 @@ func NewUserRepository(dao user_dao.UserDao) UserRepository {
 	return &UserRepositoryImpl{
 		dao: dao,
 	}
+}
+
+func (repo *UserRepositoryImpl) FindByID(ctx context.Context, id int64) (user_domain.User, error) {
+	daoUser, err := repo.dao.FindByID(ctx, id)
+	if err != nil {
+		return user_domain.User{}, err
+	}
+	return repo.entityToDomain(daoUser), nil
 }
 
 func (repo *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (user user_domain.User, err error) {

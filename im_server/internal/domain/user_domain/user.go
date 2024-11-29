@@ -10,7 +10,7 @@ type User struct {
 	CreateTime time.Time `json:"createTime"`
 	Email      string    `json:"email"`
 	Phone      string    `json:"phone"`
-	Password   string    `json:"password"`
+	Password   string    `json:"-"`
 	Nickname   string    `json:"nickname"`
 	Signature  string    `json:"signature"`
 	Avatar     string    `json:"avatar"`

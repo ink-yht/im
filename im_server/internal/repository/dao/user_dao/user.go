@@ -16,6 +16,7 @@ var (
 type UserDao interface {
 	Insert(ctx context.Context, u User) error
 	FindByEmail(ctx context.Context, email string) (User, error)
+	FindByID(ctx context.Context, id int64) (User, error)
 }
 
 type GormUserDAO struct {
@@ -24,6 +25,12 @@ type GormUserDAO struct {
 
 func NewUserDAO(db *gorm.DB) UserDao {
 	return &GormUserDAO{db: db}
+}
+
+func (dao *GormUserDAO) FindByID(ctx context.Context, id int64) (User, error) {
+	var user User
+	err := dao.db.WithContext(ctx).Preload("UserConf").Where("id = ? ", id).First(&user).Error
+	return user, err
 }
 
 // FindByEmail 查询邮箱
