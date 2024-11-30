@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
+	"log"
 	"time"
 )
 
@@ -17,6 +18,7 @@ type UserDao interface {
 	Insert(ctx context.Context, u User) error
 	FindByEmail(ctx context.Context, email string) (User, error)
 	FindByID(ctx context.Context, id int64) (User, error)
+	UpdateInfo(ctx context.Context, u User) error
 }
 
 type GormUserDAO struct {
@@ -25,6 +27,56 @@ type GormUserDAO struct {
 
 func NewUserDAO(db *gorm.DB) UserDao {
 	return &GormUserDAO{db: db}
+}
+
+func (dao *GormUserDAO) UpdateInfo(ctx context.Context, u User) error {
+	err := dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 更新 User 表
+		now := time.Now().UnixMilli()
+		userUpdateData := map[string]interface{}{
+			"update_time": now,
+			"nickname":    u.Nickname,
+			"signature":   u.Signature,
+			"avatar":      u.Avatar,
+			"address":     u.Address,
+			"birthday":    u.Birthday,
+			"sex":         u.Sex,
+		}
+		if err := tx.Model(&u).Updates(userUpdateData).Error; err != nil {
+			return err
+		}
+
+		// 更新 UserConf 表
+		userConfUpdateData := map[string]interface{}{
+			"update_time":           now,
+			"recall_message":        u.UserConf.RecallMessage,
+			"friend_online":         u.UserConf.FriendOnline,
+			"sound":                 u.UserConf.Sound,
+			"secure_link":           u.UserConf.SecureLink,
+			"save_pwd":              u.UserConf.SavePwd,
+			"search_user":           u.UserConf.SearchUser,
+			"verification":          u.UserConf.Verification,
+			"verification_question": u.UserConf.VerificationQuestion,
+			"online":                u.UserConf.Online,
+		}
+		if err := tx.Model(&u.UserConf).Updates(userConfUpdateData).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	// 错误处理
+	if err != nil {
+		// 记录日志或处理事务错误
+		log.Printf("failed to update user info: %v", err)
+		return err
+	}
+
+	// 如果事务成功
+	log.Println("user info updated successfully")
+	return nil
+
 }
 
 func (dao *GormUserDAO) FindByID(ctx context.Context, id int64) (User, error) {

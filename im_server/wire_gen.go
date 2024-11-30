@@ -8,9 +8,13 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/ink-yht/im/internal/repository/dao/file_dao"
 	"github.com/ink-yht/im/internal/repository/dao/user_dao"
+	"github.com/ink-yht/im/internal/repository/file_repo"
 	"github.com/ink-yht/im/internal/repository/user_repo"
+	"github.com/ink-yht/im/internal/service/file_service"
 	"github.com/ink-yht/im/internal/service/user_service"
+	"github.com/ink-yht/im/internal/web/file_web"
 	"github.com/ink-yht/im/internal/web/user_web"
 	"github.com/ink-yht/im/ioc"
 )
@@ -29,6 +33,10 @@ func InitWebServer() *gin.Engine {
 	userRepository := user_repo.NewUserRepository(userDao)
 	userService := user_service.NewUserService(userRepository)
 	userHandler := user_web.NewUserHandler(userService, logger)
-	engine := ioc.InitWebServer(v, userHandler)
+	fileDao := file_dao.NewFileDAO(db)
+	fileRepository := file_repo.NewFileRepository(fileDao)
+	fileService := file_service.NewFileService(fileRepository)
+	fileHandler := file_web.NewFileHandler(fileService, logger)
+	engine := ioc.InitWebServer(v, userHandler, fileHandler)
 	return engine
 }

@@ -1,61 +1,34 @@
-package user_repo
+package file_repo
 
 import (
-	"context"
 	"database/sql"
-	"encoding/json"
+	"github.com/goccy/go-json"
 	"github.com/ink-yht/im/internal/domain/user_domain"
+	"github.com/ink-yht/im/internal/repository/dao/file_dao"
 	"github.com/ink-yht/im/internal/repository/dao/user_dao"
+	"golang.org/x/net/context"
 	"time"
 )
 
-var (
-	ErrDuplicate      = user_dao.ErrDuplicate
-	ErrRecordNotFound = user_dao.ErrRecordNotFound
-)
-
-type UserRepository interface {
-	Create(ctx context.Context, user user_domain.User) error
-	FindByEmail(ctx context.Context, email string) (user user_domain.User, err error)
-	FindByID(ctx context.Context, id int64) (user_domain.User, error)
-	UpdateInfo(ctx context.Context, user user_domain.User) error
+type FileRepository interface {
+	Avatar(ctx context.Context, user user_domain.User) error
 }
 
-type UserRepositoryImpl struct {
-	dao user_dao.UserDao
+type FileRepositoryImpl struct {
+	dao file_dao.FileDao
 }
 
-func NewUserRepository(dao user_dao.UserDao) UserRepository {
-	return &UserRepositoryImpl{
+func NewFileRepository(dao file_dao.FileDao) FileRepository {
+	return &FileRepositoryImpl{
 		dao: dao,
 	}
 }
 
-func (repo *UserRepositoryImpl) UpdateInfo(ctx context.Context, user user_domain.User) error {
-	return repo.dao.UpdateInfo(ctx, repo.domainToEntity(user))
+func (repo *FileRepositoryImpl) Avatar(ctx context.Context, user user_domain.User) error {
+	return repo.dao.Avatar(ctx, repo.domainToEntity(user))
 }
 
-func (repo *UserRepositoryImpl) FindByID(ctx context.Context, id int64) (user_domain.User, error) {
-	daoUser, err := repo.dao.FindByID(ctx, id)
-	if err != nil {
-		return user_domain.User{}, err
-	}
-	return repo.entityToDomain(daoUser), nil
-}
-
-func (repo *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (user user_domain.User, err error) {
-	daoUser, err := repo.dao.FindByEmail(ctx, email)
-	if err != nil {
-		return user_domain.User{}, err
-	}
-	return repo.entityToDomain(daoUser), nil
-}
-
-func (repo *UserRepositoryImpl) Create(ctx context.Context, user user_domain.User) error {
-	return repo.dao.Insert(ctx, repo.domainToEntity(user))
-}
-
-func (repo *UserRepositoryImpl) domainToEntity(u user_domain.User) user_dao.User {
+func (repo *FileRepositoryImpl) domainToEntity(u user_domain.User) user_dao.User {
 	var verificationQuestionJSON []byte
 	if u.UserConf.VerificationQuestion != nil {
 		verificationQuestionJSON, _ = json.Marshal(u.UserConf.VerificationQuestion)
@@ -96,7 +69,7 @@ func (repo *UserRepositoryImpl) domainToEntity(u user_domain.User) user_dao.User
 	}
 }
 
-func (repo *UserRepositoryImpl) entityToDomain(u user_dao.User) user_domain.User {
+func (repo *FileRepositoryImpl) entityToDomain(u user_dao.User) user_domain.User {
 
 	var verificationQuestion user_domain.VerificationQuestion
 	if u.UserConf.VerificationQuestion != "" {

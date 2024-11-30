@@ -2,9 +2,8 @@ package user_dao
 
 import (
 	"database/sql"
-	"database/sql/driver"
-	"encoding/json"
 	"github.com/ink-yht/im/internal/repository/dao/chat_dao"
+	"gorm.io/gorm"
 )
 
 // User 用户表
@@ -29,18 +28,18 @@ type User struct {
 
 // UserConf 用户配置表
 type UserConf struct {
-	ID                   int64                 `gorm:"primaryKey;autoIncrement"` // ID
-	CreateTime           int64                 // 创建时间
-	UpdateTime           int64                 // 更新时间
-	RecallMessage        *string               `gorm:"size:32"` // 撤回消息的提示内容
-	FriendOnline         bool                  // 好友上线提醒
-	Sound                bool                  // 声音
-	SecureLink           bool                  // 安全链接
-	SavePwd              bool                  // 保存密码
-	SearchUser           int8                  `gorm:"default:1"` // 别人查找到你的方式 0 不允许别人查找到我， 1  通过用户号找到我 2 可以通过手机号搜索到我
-	Verification         int8                  `gorm:"default:1"` // 好友验证 0 不允许任何人添加  1 允许任何人添加  2 需要验证消息 3 需要回答问题  4  需要正确回答问题
-	VerificationQuestion *VerificationQuestion // 验证问题  为3和4的时候需要
-	Online               bool                  // 是否在线
+	ID                   int64   `gorm:"primaryKey;autoIncrement"` // ID
+	CreateTime           int64   // 创建时间
+	UpdateTime           int64   // 更新时间
+	RecallMessage        *string `gorm:"size:32"` // 撤回消息的提示内容
+	FriendOnline         bool    // 好友上线提醒
+	Sound                bool    // 声音
+	SecureLink           bool    // 安全链接
+	SavePwd              bool    // 保存密码
+	SearchUser           int8    `gorm:"default:1"` // 别人查找到你的方式 0 不允许别人查找到我， 1  通过用户号找到我 2 可以通过手机号搜索到我
+	Verification         int8    `gorm:"default:1"` // 好友验证 0 不允许任何人添加  1 允许任何人添加  2 需要验证消息 3 需要回答问题  4  需要正确回答问题
+	VerificationQuestion string  `gorm:"type:json"` // 验证问题  为3和4的时候需要
+	Online               bool    // 是否在线
 
 	UserID int64 `gorm:"uniqueIndex"` // 用户ID，唯一键
 }
@@ -61,41 +60,28 @@ type Friend struct {
 
 // FriendRequest 好友请求表
 type FriendRequest struct {
-	ID                   int64                 `gorm:"primaryKey;autoIncrement"` // ID
-	RequesterID          int64                 `gorm:"not null;index"`           // 发起者用户 ID
-	ReceiverID           int64                 `gorm:"not null;index"`           // 接收者用户 ID
-	ValidationType       int                   `gorm:"not null"`                 // 验证类型
-	ValidationMessage    string                `gorm:"type:text"`                // 验证消息
-	ValidationAnswer     string                `gorm:"type:text"`                // 提交的答案
-	Status               int                   `gorm:"default:0"`                // 状态（0: 未操作, 1: 同意, 2: 拒绝, 3: 忽略）
-	AdditionalMessages   string                `gorm:"size:128"`                 // 附加消息
-	VerificationQuestion *VerificationQuestion // 验证问题  为3和4的时候需要
-	CreateTime           int64                 // 创建时间
-	UpdateTime           int64                 // 更新时间
+	ID                   int64   `gorm:"primaryKey;autoIncrement"` // ID
+	RequesterID          int64   `gorm:"not null;index"`           // 发起者用户 ID
+	ReceiverID           int64   `gorm:"not null;index"`           // 接收者用户 ID
+	ValidationType       int     `gorm:"not null"`                 // 验证类型
+	ValidationMessage    string  `gorm:"type:text"`                // 验证消息
+	ValidationAnswer     string  `gorm:"type:text"`                // 提交的答案
+	Status               int     `gorm:"default:0"`                // 状态（0: 未操作, 1: 同意, 2: 拒绝, 3: 忽略）
+	AdditionalMessages   string  `gorm:"size:128"`                 // 附加消息
+	VerificationQuestion *string `gorm:"type:json"`                // 验证问题  为3和4的时候需要
+	CreateTime           int64   // 创建时间
+	UpdateTime           int64   // 更新时间
 
 	Requester User `gorm:"foreignKey:RequesterID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"` // 请求者
 	Receiver  User `gorm:"foreignKey:ReceiverID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`  // 接收者
 }
 
-// VerificationQuestion 验证问题
-type VerificationQuestion struct {
-	Problem1 *string `json:"problem1"`
-	Problem2 *string `json:"problem2"`
-	Problem3 *string `json:"problem3"`
-	Answer1  *string `json:"answer1"`
-	Answer2  *string `json:"answer2"`
-	Answer3  *string `json:"answer3"`
-}
-
-// Scan 取出来的时候的数据
-func (c *VerificationQuestion) Scan(val interface{}) error {
-	return json.Unmarshal(val.([]byte), c)
-}
-
-// Value 入库的数据
-func (c *VerificationQuestion) Value() (driver.Value, error) {
-	b, err := json.Marshal(c)
-	return string(b), err
+// BeforeSave 是GORM的钩子函数，在保存记录之前调用
+func (uc *UserConf) BeforeSave(tx *gorm.DB) (err error) {
+	if uc.VerificationQuestion == "" {
+		uc.VerificationQuestion = "{}" // 设置为空的JSON对象
+	}
+	return
 }
 
 // 映射实现

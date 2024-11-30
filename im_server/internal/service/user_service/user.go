@@ -19,6 +19,7 @@ type UserService interface {
 	Signup(ctx context.Context, req user_domain.EmailRegisterRequest) error
 	Login(ctx context.Context, req *user_domain.EmailLoginRequest, userAgent string) (string, error)
 	Info(ctx context.Context, id int64) (user_domain.User, error)
+	Edit(ctx context.Context, req user_domain.UpdateInfoRequest) error
 }
 
 // UserServiceImpl 实现了 UserService 接口
@@ -30,6 +31,37 @@ func NewUserService(repo user_repo.UserRepository) UserService {
 	return &UserServiceImpl{
 		repo: repo,
 	}
+}
+
+func (svc *UserServiceImpl) Edit(ctx context.Context, req user_domain.UpdateInfoRequest) error {
+	return svc.repo.UpdateInfo(ctx, user_domain.User{
+		ID:        req.ID,
+		Phone:     req.Phone,
+		Nickname:  req.Nickname,
+		Signature: req.Signature,
+		Avatar:    req.Avatar,
+		Address:   req.Address,
+		Birthday:  req.Birthday,
+		Sex:       req.Sex,
+		UserConf: user_domain.UserConf{
+			ID:            req.ID,
+			RecallMessage: req.UserConf.RecallMessage,
+			FriendOnline:  req.UserConf.FriendOnline,
+			Sound:         req.UserConf.Sound,
+			SecureLink:    req.UserConf.SecureLink,
+			SavePwd:       req.UserConf.SavePwd,
+			SearchUser:    req.UserConf.SearchUser,
+			Verification:  req.UserConf.Verification,
+			VerificationQuestion: &user_domain.VerificationQuestion{
+				Problem1: req.UserConf.VerificationQuestion.Problem1,
+				Problem2: req.UserConf.VerificationQuestion.Problem2,
+				Problem3: req.UserConf.VerificationQuestion.Problem3,
+				Answer1:  req.UserConf.VerificationQuestion.Answer1,
+				Answer2:  req.UserConf.VerificationQuestion.Answer2,
+				Answer3:  req.UserConf.VerificationQuestion.Answer3,
+			},
+		},
+	})
 }
 
 func (svc *UserServiceImpl) Info(ctx context.Context, id int64) (user_domain.User, error) {

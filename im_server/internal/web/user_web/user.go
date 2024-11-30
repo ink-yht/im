@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-// 确保 UserHandler 上实现了 Handler 接口
+//// 确保 UserHandler 上实现了 Handler 接口
 //var _ web.Handler = (*UserHandler)(nil)
 
 type UserHandler struct {
@@ -139,7 +139,27 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 }
 
 func (u *UserHandler) Edit(ctx *gin.Context) {
-
+	userClaims := ctx.MustGet("claims").(*user_service.UserClaims)
+	var req user_domain.UpdateInfoRequest
+	err := ctx.Bind(&req)
+	if err != nil {
+		return
+	}
+	req.ID = userClaims.Id
+	err = u.svc.Edit(ctx, req)
+	if err != nil {
+		ctx.JSON(http.StatusOK, web.Result{
+			Code: 2,
+			Msg:  "系统错误",
+			Data: nil,
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, web.Result{
+		Code: 0,
+		Msg:  "个人信息修改成功",
+		Data: nil,
+	})
 }
 
 func (u *UserHandler) Info(ctx *gin.Context) {
